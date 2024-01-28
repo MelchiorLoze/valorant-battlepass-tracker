@@ -1,0 +1,5 @@
+config.yaml
+dist
+error.log
+node_modules
+.vscode
