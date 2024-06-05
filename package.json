@@ -14,6 +14,9 @@
         "url": "https://github.com/MelchiorLoze/valorant-battlepass-tracker/issues"
     },
     "homepage": "https://github.com/MelchiorLoze/valorant-battlepass-tracker#readme",
+    "scripts": {
+        "start": "npx ts-node src/main.ts"
+    },
     "devDependencies": {
         "@types/node": "^20.11.8",
         "@typescript-eslint/eslint-plugin": "^6.19.1",
