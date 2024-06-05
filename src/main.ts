@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
 
-const CONTRACT_BATTLEPASS_ID = 'd3946b6b-49b3-746b-169e-9488f7a3ba35';
+const CONTRACT_BATTLEPASS_ID = '53c858f6-4d23-4111-1dee-b8933ef21929';
 
 const getClientVersion = async (): Promise<string> => {
     const response = await fetch('https://valorant-api.com/v1/version');
@@ -127,7 +127,9 @@ const getBattlePassProgress = async (): Promise<number | undefined> => {
             Authorization: 'Bearer ' + accessToken,
             'User-Agent': '',
             'X-Riot-ClientVersion': clientVersion,
-            'X-Riot-Entitlements-JWT': entitlementsToken
+            'X-Riot-Entitlements-JWT': entitlementsToken,
+            'X-Riot-ClientPlatform':
+                'ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9'
         }
     });
     const data = await response.json();
@@ -185,6 +187,7 @@ const main = async (): Promise<void> => {
                 2
             )}% (${progressPercentageWithEpilogue.toFixed(2)}% counting epilogue)`
         );
+        console.log(`XP remaining: ${totalXpRequired - battlePassProgress} (without epilogue)`);
     } catch (error) {
         handleError((error as Error).message);
     }
