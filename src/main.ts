@@ -3,6 +3,33 @@ import * as path from 'path';
 import * as yaml from 'yaml';
 
 const CONTRACT_BATTLEPASS_ID = '53c858f6-4d23-4111-1dee-b8933ef21929';
+const BATTLEPASS_TIER_COUNT = 50;
+const BATTLEPASS_EPILOGUE_TIER_COUNT = 5;
+
+type Config = {
+    clientVersion: string;
+    shard: string;
+    puuid: string;
+    ssid: string;
+    accessToken: string;
+    entitlementsToken: string;
+};
+
+type Contract = {
+    ContractDefinitionID: string;
+    ContractProgression: {
+        TotalProgressionEarned: number;
+        TotalProgressionEarnedVersion: number;
+        HighestRewardedLevel: {
+            [x: string]: {
+                Amount: number;
+                Version: number;
+            };
+        };
+    };
+    ProgressionLevelReached: number;
+    ProgressionTowardsNextLevel: number;
+};
 
 const getClientVersion = async (): Promise<string> => {
     const response = await fetch('https://valorant-api.com/v1/version');
@@ -97,63 +124,94 @@ const getEntitlementsToken = async (accessToken: string): Promise<string> => {
     throw new Error('Failed to get entitlements token');
 };
 
-const getBattlePassProgress = async (): Promise<number | undefined> => {
-    const config = fs.existsSync('config.yaml')
+const getConfig = async (): Promise<Config> => {
+    const parsedConfig = fs.existsSync('config.yaml')
         ? yaml.parse(fs.readFileSync('config.yaml', 'utf8'))
         : undefined;
 
-    const clientVersion = config?.clientVersion ?? (await getClientVersion());
-    const shard = config?.shard ?? getShard();
-    const ssid = config?.ssid ?? getSSID();
-    const accessToken = config?.accessToken ?? (await getAccessToken(ssid));
-    const puuid = config?.puuid ?? (await getPUUID(accessToken));
+    const clientVersion = parsedConfig?.clientVersion ?? (await getClientVersion());
+    const shard = parsedConfig?.shard ?? getShard();
+    const ssid = parsedConfig?.ssid ?? getSSID();
+    const accessToken = parsedConfig?.accessToken ?? (await getAccessToken(ssid));
+    const puuid = parsedConfig?.puuid ?? (await getPUUID(accessToken));
     const entitlementsToken =
-        config?.entitlementsToken ?? (await getEntitlementsToken(accessToken));
+        parsedConfig?.entitlementsToken ?? (await getEntitlementsToken(accessToken));
 
-    const newConfig = yaml.stringify({
+    const config = {
         clientVersion,
         shard,
         puuid,
         ssid,
         accessToken,
         entitlementsToken
-    });
-    fs.writeFileSync('config.yaml', newConfig);
+    };
 
-    const response = await fetch(`https://pd.${shard}.a.pvp.net/contracts/v1/contracts/${puuid}`, {
-        method: 'GET',
-        headers: {
-            Accept: '*/*',
-            Authorization: 'Bearer ' + accessToken,
-            'User-Agent': '',
-            'X-Riot-ClientVersion': clientVersion,
-            'X-Riot-Entitlements-JWT': entitlementsToken,
-            'X-Riot-ClientPlatform':
-                'ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9'
+    fs.writeFileSync('config.yaml', yaml.stringify(config));
+
+    return config;
+};
+
+const getBattlepassData = async ({ retry }: { retry?: boolean } = {}): Promise<
+    Contract | undefined
+> => {
+    const config = await getConfig();
+
+    const response = await fetch(
+        `https://pd.${config.shard}.a.pvp.net/contracts/v1/contracts/${config.puuid}`,
+        {
+            method: 'GET',
+            headers: {
+                Accept: '*/*',
+                Authorization: 'Bearer ' + config.accessToken,
+                'User-Agent': '',
+                'X-Riot-ClientVersion': config.clientVersion,
+                'X-Riot-Entitlements-JWT': config.entitlementsToken,
+                'X-Riot-ClientPlatform':
+                    'ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9'
+            }
         }
-    });
+    );
     const data = await response.json();
 
-    const progress = data?.Contracts?.find(
-        (contract: { ContractDefinitionID: string }) =>
-            contract.ContractDefinitionID === CONTRACT_BATTLEPASS_ID
-    )?.ContractProgression?.TotalProgressionEarned;
-    if (progress) return progress;
-    if (config) return undefined;
-    throw new Error('Failed to get progress');
+    const battlepassData = data?.Contracts?.find(
+        (contract: Contract) => contract.ContractDefinitionID === CONTRACT_BATTLEPASS_ID
+    );
+    if (battlepassData) return battlepassData;
+    if (retry) return undefined;
+    throw new Error('Failed to get battlepass data');
+};
+
+const getActiveActEndDate = async (): Promise<Date> => {
+    const config = await getConfig();
+    const response = await fetch(
+        `https://shared.${config.shard}.a.pvp.net/content-service/v3/content`,
+        {
+            method: 'GET',
+            headers: {
+                Accept: '*/*',
+                Authorization: 'Bearer ' + config.accessToken,
+                'User-Agent': '',
+                'X-Riot-ClientVersion': config.clientVersion,
+                'X-Riot-Entitlements-JWT': config.entitlementsToken,
+                'X-Riot-ClientPlatform':
+                    'ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9'
+            }
+        }
+    );
+    const data = await response.json();
+    const activeAct = data.Seasons.find((season: { IsActive: boolean }) => season.IsActive);
+    return new Date(activeAct.EndTime);
 };
 
 const getTotalXpRequired = (withEpilogue = false): number => {
-    const numberOfTiers = 50;
     let result = 0;
-    for (let i = 1; i <= numberOfTiers; i++) {
+    for (let i = 1; i <= BATTLEPASS_TIER_COUNT; i++) {
         if (i !== 1) result += i * 750 + 500;
     }
 
     if (withEpilogue) {
-        const numberOfEpilogueTiers = 5;
         const xpRequriedPerEpilogueTier = 36500;
-        result += numberOfEpilogueTiers * xpRequriedPerEpilogueTier;
+        result += BATTLEPASS_EPILOGUE_TIER_COUNT * xpRequriedPerEpilogueTier;
     }
 
     return result;
@@ -168,26 +226,45 @@ const main = async (): Promise<void> => {
     fs.writeFileSync('error.log', '');
 
     try {
-        let battlePassProgress = await getBattlePassProgress();
-        if (!battlePassProgress) {
+        let battlepassData = await getBattlepassData({ retry: true });
+        if (!battlepassData) {
             fs.appendFileSync('error.log', 'Retrying...\n');
             fs.writeFileSync('config.yaml', '');
-            battlePassProgress = await getBattlePassProgress();
+            battlepassData = await getBattlepassData();
         }
-        if (!battlePassProgress) throw new Error('Failed to get progress');
+        if (!battlepassData) throw new Error('Failed to get progress');
+
+        const battlepassProgress = battlepassData.ContractProgression.TotalProgressionEarned;
+        const battlepassLevel = battlepassData.ProgressionLevelReached;
 
         const totalXpRequired = getTotalXpRequired();
         const totalXpRequiredWithEpilogue = getTotalXpRequired(true);
-        const progressPercentage = (battlePassProgress / totalXpRequired) * 100;
+        const progressPercentage = (battlepassProgress / totalXpRequired) * 100;
         const progressPercentageWithEpilogue =
-            (battlePassProgress / totalXpRequiredWithEpilogue) * 100;
+            (battlepassProgress / totalXpRequiredWithEpilogue) * 100;
 
+        console.log('VALORANT Battlepass Progress:');
+        console.log('-'.repeat(30));
+        console.log('Without epilogue:');
         console.log(
-            `VALORANT BattlePass Progress: ${progressPercentage.toFixed(
+            `\tProgress: ${progressPercentage.toFixed(
                 2
-            )}% (${progressPercentageWithEpilogue.toFixed(2)}% counting epilogue)`
+            )}% (tier ${battlepassLevel}/${BATTLEPASS_TIER_COUNT})`
         );
-        console.log(`XP remaining: ${totalXpRequired - battlePassProgress} (without epilogue)`);
+        console.log(`\tXP remaining: ${totalXpRequired - battlepassProgress}`);
+        console.log('With epilogue:');
+        console.log(
+            `\tProgress: ${progressPercentageWithEpilogue.toFixed(2)}% (tier ${battlepassLevel}/${
+                BATTLEPASS_TIER_COUNT + BATTLEPASS_EPILOGUE_TIER_COUNT
+            })`
+        );
+        console.log(`\tXP remaining: ${totalXpRequiredWithEpilogue - battlepassProgress}`);
+
+        const activeActEndDate = await getActiveActEndDate();
+        const timeRemaining = new Date(activeActEndDate.getTime() - Date.now() - 86400000);
+        console.log(
+            `\nTime remaining: ${timeRemaining.getDate()} days ${timeRemaining.getHours()} hours ${timeRemaining.getMinutes()} minutes ${timeRemaining.getSeconds()} seconds`
+        );
     } catch (error) {
         handleError((error as Error).message);
     }
