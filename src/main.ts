@@ -137,7 +137,7 @@ const getConfig = async (): Promise<Config> => {
     const entitlementsToken =
         parsedConfig?.entitlementsToken ?? (await getEntitlementsToken(accessToken));
 
-    const config = {
+    const config: Config = {
         clientVersion,
         shard,
         puuid,
