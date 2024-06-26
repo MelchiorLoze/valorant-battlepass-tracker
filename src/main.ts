@@ -1,25 +1,10 @@
 import * as fs from 'fs';
 import { getConfig } from './config';
+import { Contract, Season } from './types';
 
 const CONTRACT_BATTLEPASS_ID = '53c858f6-4d23-4111-1dee-b8933ef21929';
 const BATTLEPASS_TIER_COUNT = 50;
 const BATTLEPASS_EPILOGUE_TIER_COUNT = 5;
-
-type Contract = {
-    ContractDefinitionID: string;
-    ContractProgression: {
-        TotalProgressionEarned: number;
-        TotalProgressionEarnedVersion: number;
-        HighestRewardedLevel: {
-            [x: string]: {
-                Amount: number;
-                Version: number;
-            };
-        };
-    };
-    ProgressionLevelReached: number;
-    ProgressionTowardsNextLevel: number;
-};
 
 const getBattlepassData = async ({ retry }: { retry?: boolean } = {}): Promise<
     Contract | undefined
@@ -69,7 +54,9 @@ const getActiveActEndDate = async (): Promise<Date> => {
         }
     );
     const data = await response.json();
-    const activeAct = data.Seasons.find((season: { IsActive: boolean }) => season.IsActive);
+    const activeAct: Season = data.Seasons.find(
+        (season: Season) => season.IsActive && season.Type === 'act'
+    );
     return new Date(activeAct.EndTime);
 };
 
@@ -132,9 +119,14 @@ const main = async (): Promise<void> => {
         console.log(`\tXP remaining: ${totalXpRequiredWithEpilogue - battlepassProgress}`);
 
         const activeActEndDate = await getActiveActEndDate();
-        const timeRemaining = new Date(activeActEndDate.getTime() - Date.now() - 86400000);
+        const remainingTimeInSeconds =
+            (activeActEndDate.getTime() - (Date.now() + 1000 * 60 * 60 * 2)) / 1000; // UTC+2
         console.log(
-            `\nTime remaining: ${timeRemaining.getDate()} days ${timeRemaining.getHours()} hours ${timeRemaining.getMinutes()} minutes ${timeRemaining.getSeconds()} seconds`
+            `\nTime remaining: ${Math.floor(remainingTimeInSeconds / 86400)} days ${Math.floor(
+                (remainingTimeInSeconds % 86400) / 3600
+            )} hours ${Math.floor((remainingTimeInSeconds % 3600) / 60)} minutes ${Math.floor(
+                remainingTimeInSeconds % 60
+            )} seconds`
         );
     } catch (error) {
         handleError((error as Error).message);

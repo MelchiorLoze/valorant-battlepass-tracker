@@ -1,15 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
-
-type Config = {
-    clientVersion: string;
-    shard: string;
-    ssid: string;
-    accessToken: string;
-    puuid: string;
-    entitlementsToken: string;
-};
+import { Config } from './types';
 
 const getClientVersion = async (): Promise<string> => {
     const response = await fetch('https://valorant-api.com/v1/version');
