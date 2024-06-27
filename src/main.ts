@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { getConfig } from './config';
 import { Contract, Season } from './types';
 
-const CONTRACT_BATTLEPASS_ID = '53c858f6-4d23-4111-1dee-b8933ef21929';
+const CONTRACT_BATTLEPASS_ID = '43bc0356-4e83-d767-c341-e6b9aaef7083';
 const BATTLEPASS_TIER_COUNT = 50;
 const BATTLEPASS_EPILOGUE_TIER_COUNT = 5;
 
