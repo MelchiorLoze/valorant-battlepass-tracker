@@ -124,9 +124,7 @@ const main = async (): Promise<void> => {
         console.log(
             `\nTime remaining: ${Math.floor(remainingTimeInSeconds / 86400)} days ${Math.floor(
                 (remainingTimeInSeconds % 86400) / 3600
-            )} hours ${Math.floor((remainingTimeInSeconds % 3600) / 60)} minutes ${Math.floor(
-                remainingTimeInSeconds % 60
-            )} seconds`
+            )} hours ${Math.floor((remainingTimeInSeconds % 3600) / 60)} minutes`
         );
     } catch (error) {
         handleError((error as Error).message);
