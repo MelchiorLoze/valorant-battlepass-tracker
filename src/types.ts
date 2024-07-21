@@ -5,6 +5,7 @@ export type Config = {
     accessToken: string;
     puuid: string;
     entitlementsToken: string;
+    clientPlatform: string;
 };
 
 export type Contract = {

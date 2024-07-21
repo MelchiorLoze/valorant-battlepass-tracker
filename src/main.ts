@@ -21,8 +21,7 @@ const getBattlepassData = async ({ retry }: { retry?: boolean } = {}): Promise<
                 'User-Agent': '',
                 'X-Riot-ClientVersion': config.clientVersion,
                 'X-Riot-Entitlements-JWT': config.entitlementsToken,
-                'X-Riot-ClientPlatform':
-                    'ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9'
+                'X-Riot-ClientPlatform': config.clientPlatform
             }
         }
     );
@@ -48,8 +47,7 @@ const getActiveActEndDate = async (): Promise<Date> => {
                 'User-Agent': '',
                 'X-Riot-ClientVersion': config.clientVersion,
                 'X-Riot-Entitlements-JWT': config.entitlementsToken,
-                'X-Riot-ClientPlatform':
-                    'ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9'
+                'X-Riot-ClientPlatform': config.clientPlatform
             }
         }
     );

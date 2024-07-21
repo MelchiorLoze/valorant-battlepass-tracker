@@ -3,6 +3,9 @@ import * as path from 'path';
 import * as yaml from 'yaml';
 import { Config } from './types';
 
+const CLIENT_PLATFORM =
+    'ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9';
+
 const getClientVersion = async (): Promise<string> => {
     const response = await fetch('https://valorant-api.com/v1/version');
 
@@ -115,7 +118,8 @@ export const getConfig = async (): Promise<Config> => {
         ssid,
         accessToken,
         puuid,
-        entitlementsToken
+        entitlementsToken,
+        clientPlatform: CLIENT_PLATFORM
     };
 
     fs.writeFileSync('config.yaml', yaml.stringify(config));
