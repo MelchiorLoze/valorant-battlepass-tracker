@@ -29,3 +29,13 @@ export type Season = {
     IsActive: boolean;
     EndTime: string;
 };
+
+export type RiotGamesPrivateSettings = {
+    'riot-login': {
+        persist: {
+            session: {
+                cookies: Array<{ name: string; value: string }>;
+            };
+        };
+    };
+};

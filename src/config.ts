@@ -1,7 +1,8 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as yaml from 'yaml';
-import { Config } from './types';
+import * as yaml from 'jsr:@std/yaml';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import process from 'node:process';
+import { Config, RiotGamesPrivateSettings } from '../src/types.ts';
 
 const CLIENT_PLATFORM =
     'ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9';
@@ -18,7 +19,10 @@ const getShard = (): string => {
     const localAppDataPath = process.env.LOCALAPPDATA;
     if (!localAppDataPath) throw new Error('LOCALAPPDATA is not defined');
 
-    const filePath = path.join(localAppDataPath, 'VALORANT\\Saved\\Logs\\ShooterGame.log');
+    const filePath = path.join(
+        localAppDataPath,
+        'VALORANT\\Saved\\Logs\\ShooterGame.log',
+    );
     const data = fs.readFileSync(filePath, 'utf8');
 
     const regex = /https:\/\/glz-(.+?)-1.(.+?).a.pvp.net/;
@@ -33,13 +37,14 @@ const getSSID = (): string => {
 
     const filePath = path.join(
         localAppDataPath,
-        'Riot Games\\Riot Client\\Data\\RiotGamesPrivateSettings.yaml'
+        'Riot Games\\Riot Client\\Data\\RiotGamesPrivateSettings.yaml',
     );
     const data = fs.readFileSync(filePath, 'utf8');
-    const parsedData = yaml.parse(data);
+
+    const parsedData = yaml.parse(data) as RiotGamesPrivateSettings;
 
     const ssid = parsedData?.['riot-login']?.persist?.session?.cookies?.find(
-        (cookie: { name: string }) => cookie.name === 'ssid'
+        (cookie) => cookie.name === 'ssid',
     )?.value;
     if (ssid) return ssid;
     throw new Error('Failed to get ssid');
@@ -53,14 +58,15 @@ const getAccessToken = async (ssid: string): Promise<string> => {
             redirect: 'manual',
             headers: {
                 Cookie: `ssid=${ssid}`,
-                'User-Agent': ''
-            }
-        }
+                'User-Agent': '',
+            },
+        },
     );
 
     const location = response.headers.get('location');
-    if (!location || !location.startsWith('https://playvalorant.com/opt_in'))
+    if (!location || !location.startsWith('https://playvalorant.com/opt_in')) {
         throw new Error('Failed to get access token');
+    }
 
     const searchParams = new URLSearchParams(new URL(location).hash.slice(1));
     const accessToken = searchParams.get('access_token');
@@ -70,13 +76,13 @@ const getAccessToken = async (ssid: string): Promise<string> => {
     throw new Error('Failed to get access token');
 };
 
-const getPUUID = async (accessToken: string): Promise<string | undefined> => {
+const getPUUID = async (accessToken: string): Promise<string> => {
     const response = await fetch('https://auth.riotgames.com/userinfo', {
         method: 'POST',
         headers: {
             Authorization: 'Bearer ' + accessToken,
-            'User-Agent': ''
-        }
+            'User-Agent': '',
+        },
     });
 
     const puuid = (await response.json())?.sub;
@@ -85,14 +91,17 @@ const getPUUID = async (accessToken: string): Promise<string | undefined> => {
 };
 
 const getEntitlementsToken = async (accessToken: string): Promise<string> => {
-    const response = await fetch('https://entitlements.auth.riotgames.com/api/token/v1', {
-        method: 'POST',
-        headers: {
-            Authorization: 'Bearer ' + accessToken,
-            'Content-Type': 'application/json',
-            'User-Agent': ''
-        }
-    });
+    const response = await fetch(
+        'https://entitlements.auth.riotgames.com/api/token/v1',
+        {
+            method: 'POST',
+            headers: {
+                Authorization: 'Bearer ' + accessToken,
+                'Content-Type': 'application/json',
+                'User-Agent': '',
+            },
+        },
+    );
 
     const entitlementsToken = (await response.json())?.entitlements_token;
     if (entitlementsToken) return entitlementsToken;
@@ -101,7 +110,7 @@ const getEntitlementsToken = async (accessToken: string): Promise<string> => {
 
 export const getConfig = async (): Promise<Config> => {
     const parsedConfig = fs.existsSync('config.yaml')
-        ? yaml.parse(fs.readFileSync('config.yaml', 'utf8'))
+        ? (yaml.parse(fs.readFileSync('config.yaml', 'utf8')) as Partial<Config>)
         : undefined;
 
     const clientVersion = parsedConfig?.clientVersion ?? (await getClientVersion());
@@ -109,8 +118,8 @@ export const getConfig = async (): Promise<Config> => {
     const ssid = parsedConfig?.ssid ?? getSSID();
     const accessToken = parsedConfig?.accessToken ?? (await getAccessToken(ssid));
     const puuid = parsedConfig?.puuid ?? (await getPUUID(accessToken));
-    const entitlementsToken =
-        parsedConfig?.entitlementsToken ?? (await getEntitlementsToken(accessToken));
+    const entitlementsToken = parsedConfig?.entitlementsToken ??
+        (await getEntitlementsToken(accessToken));
 
     const config: Config = {
         clientVersion,
@@ -119,7 +128,7 @@ export const getConfig = async (): Promise<Config> => {
         accessToken,
         puuid,
         entitlementsToken,
-        clientPlatform: CLIENT_PLATFORM
+        clientPlatform: CLIENT_PLATFORM,
     };
 
     fs.writeFileSync('config.yaml', yaml.stringify(config));

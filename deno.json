@@ -1,0 +1,12 @@
+{
+    "tasks": {
+        "dev": "deno run --allow-all --watch src/main.ts",
+        "start": "deno run --allow-all src/main.ts",
+        "compile": "deno compile --allow-all --output valorant-battlepass-tracker src/main.ts"
+    },
+    "fmt": {
+        "indentWidth": 4,
+        "lineWidth": 120,
+        "singleQuote": true
+    }
+}
