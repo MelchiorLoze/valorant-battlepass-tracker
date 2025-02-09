@@ -3,7 +3,7 @@ import process from 'node:process';
 import { getConfig } from './config.ts';
 import { Contract, Season } from './types.ts';
 
-const CONTRACT_BATTLEPASS_ID = '43bc0356-4e83-d767-c341-e6b9aaef7083';
+const CONTRACT_BATTLEPASS_ID = '07ba5d79-4245-03d8-7996-13baf5d08c1a';
 const BATTLEPASS_TIER_COUNT = 50;
 const BATTLEPASS_EPILOGUE_TIER_COUNT = 5;
 
